@@ -1,0 +1,13 @@
+{
+    "name": "faaizz/pin_package",
+    "description": "A Laravel package to generate and emit PINs (personal identification numbers), suitable for use with cash cards, door locks, etc.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+      {
+        "name": "Faizudeen Kajogbola",
+        "email": "fr33ziey@gmail.com"
+      }
+    ],
+    "require": {},
+}
