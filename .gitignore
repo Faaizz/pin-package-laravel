@@ -1,0 +1,8 @@
+.phpcs.xml
+.phpunit.result.cache
+composer.lock
+coverage
+docs
+phpunit.xml
+vendor
+node_modules
