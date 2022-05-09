@@ -26,13 +26,19 @@ class Generator
         return random_int($lowLim, $upLim);
     }
 
+    // Check obvious number
+    public function checkObvious($pin): bool
+    {
+        return in_array($pin, $this->obviousNumbers);
+    }
+
     // Generate pin
     public function generate(): int
     {
         $pin = $this->randomNum();
 
         $safeguardCtr = 0;
-        while (in_array($pin, $this->obviousNumbers)) {
+        while ($this->checkObvious($pin)) {
             $pin = $this->randomNum();
             $safeguardCtr++;
 
