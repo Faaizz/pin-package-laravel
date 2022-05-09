@@ -5,10 +5,13 @@ namespace Faaizz\PinGenerator\Tests\Unit;
 use Exception;
 use Faaizz\PinGenerator\Generator;
 use Faaizz\PinGenerator\Tests\TestCase;
+use Faaizz\PinGenerator\Tests\Traits\AccessInaccessibleMethodsTrait;
 use Mockery;
 
 class GeneratorTest extends TestCase
 {
+    use AccessInaccessibleMethodsTrait;
+
     public function randumNumIntervalsProvider(): array
     {
         return [
@@ -36,13 +39,13 @@ class GeneratorTest extends TestCase
     /**
      * @dataProvider randumNumIntervalsProvider
      */
-    public function testRandumNumIntervals(int $digits, int $upLimit, int $lowLimit, bool $expectFail)
+    public function testRandumNumIntervals(int $digits, int $upLimit, int $lowLimit, bool $expectFail): void
     {
         config(['pingenerator.digits' => $digits]);
 
         $gen = new Generator();
 
-        $randomNum = $gen->randomNum();
+        $randomNum = $this->invokeInaccessibleMethod($gen, 'randomNum', []);
 
         $fails = !( ($lowLimit <= $randomNum) && ($randomNum <= $upLimit) );
 
@@ -78,13 +81,15 @@ class GeneratorTest extends TestCase
     /**
      * @dataProvider checkObviousProvider
      */
-    public function testCheckObvious($pin, $obviousNumbers, $isObvious)
+    public function testCheckObvious($pin, $obviousNumbers, $isObvious): void
     {
         config(['pingenerator.obvious_numbers' => $obviousNumbers]);
 
         $gen = new Generator();
 
-        $this->assertEquals($isObvious, $gen->checkObvious($pin));
+        $res = $this->invokeInaccessibleMethod($gen, 'checkObvious', [$pin]);
+
+        $this->assertEquals($isObvious, $res);
     }
 
     public function formatProvider(): array
@@ -111,12 +116,13 @@ class GeneratorTest extends TestCase
     /**
      * @dataProvider formatProvider
      */
-    public function testFormat($numDigits, $expected, $pin)
+    public function testFormat($numDigits, $expected, $pin): void
     {
         config(['pingenerator.digits' => $numDigits]);
 
         $gen = new Generator();
-        $this->assertEquals($expected, $gen->format($pin));
+        $res = $this->invokeInaccessibleMethod($gen, 'format', [$pin]);
+        $this->assertEquals($expected, $res);
     }
 
     public function generatePinProvider(): array
@@ -164,11 +170,12 @@ class GeneratorTest extends TestCase
     /**
      * @dataProvider generatePinProvider
      */
-    public function testGeneratePin($numDigits, $expectFail)
+    public function testGeneratePin($numDigits, $expectFail): void
     {
         config(['pingenerator.digits' => $numDigits]);
 
         $gen = Mockery::mock(Generator::class . '[randomNum,checkObvious]');
+        $gen = $gen->shouldAllowMockingProtectedMethods();
 
         $this->instance(
             Generator::class,
