@@ -18,7 +18,7 @@ class Generator
     }
 
     // Get random number
-    public function randomNum(): int
+    protected function randomNum(): int
     {
         $lowLim = 0;
         $upLim = pow(10, $this->numDigits) - 1;
@@ -27,13 +27,13 @@ class Generator
     }
 
     // Check obvious number
-    public function checkObvious($pin): bool
+    protected function checkObvious($pin): bool
     {
         return in_array($pin, $this->obviousNumbers);
     }
 
     // Format pin into the appropriate number of digits by padding with zeros when necessary
-    public function format(int $pin): string
+    protected function format(int $pin): string
     {
         return sprintf($this->fmtStr, $pin);
     }
