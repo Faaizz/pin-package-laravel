@@ -17,16 +17,23 @@ class Generator
         $this->fmtStr = '%0' . $this->numDigits . 'd';
     }
 
-    // Generate pin
-    public function generate(): int
+    // Get random number
+    public function randomNum(): int
     {
         $lowLim = 0;
         $upLim = pow(10, $this->numDigits) - 1;
 
-        $pin = random_int($lowLim, $upLim);
+        return random_int($lowLim, $upLim);
+    }
+
+    // Generate pin
+    public function generate(): int
+    {
+        $pin = $this->randomNum();
+
         $safeguardCtr = 0;
         while (in_array($pin, $this->obviousNumbers)) {
-            $pin = random_int($lowLim, $upLim);
+            $pin = $this->randomNum();
             $safeguardCtr++;
 
             if ($safeguardCtr > 100) {
