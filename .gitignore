@@ -3,6 +3,5 @@
 composer.lock
 coverage
 docs
-phpunit.xml
 vendor
 node_modules
