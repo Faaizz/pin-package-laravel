@@ -9,7 +9,7 @@ class Generator
 
     public function __construct()
     {
-        $this->numDigits = 4;
+        $this->numDigits = config('pingenerator.digits');
         $this->fmtStr = '%0' . $this->numDigits . 'd';
     }
 
