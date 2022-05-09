@@ -14,7 +14,16 @@ Achieved Features:
 
 
 ## Configuration
-To configure the package, edit `config/config.php` (or `app/config/pingenerator.php` in Laravel App) appropriately.
+
+### Installation
+To publish package configs into a Laravel project, run:
+```shell
+php artisan vendor:publish --provider="Faaizz\PinGenerator\PinGeneratorServiceProvider" --tag="config"
+```
+This publishes the config into `app/config/pingenerator.php`.
+
+### Customization
+To configure the package, edit `app/config/pingenerator.php` in Laravel project appropriately.
 
 - **Change number of digits:** To change the number of digits of generated PINs, map the desired value to the `digit` key. For example, to generate 10-digit PINs:
 ```php
