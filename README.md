@@ -10,7 +10,7 @@ Target Features:
 
 Achieved Features:
 - Each PIN comprises four numeric digits (e.g. "2845")
-- 
+- "Obvious" numbers should not be allowed (e.g. "1111", "1234")
 
 
 ## References
