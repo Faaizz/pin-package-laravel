@@ -1,2 +1,1 @@
-# PIN Package for Laravel
-
+# PIN Generator Package for Laravel
