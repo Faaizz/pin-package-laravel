@@ -2,8 +2,10 @@
 
 namespace Faaizz\PinGenerator\Tests\Unit;
 
+use Exception;
 use Faaizz\PinGenerator\Generator;
 use Faaizz\PinGenerator\Tests\TestCase;
+use Mockery;
 
 class GeneratorTest extends TestCase
 {
@@ -27,12 +29,6 @@ class GeneratorTest extends TestCase
                 'upLimit' => 99999999,
                 'lowLimit' => 0,
                 'expectFail' => false,
-            ],
-            '4 digits invalid limits' => [
-                'digits' => 4,
-                'upLimit' => 900,
-                'lowLimit' => 0,
-                'expectFail' => true,
             ],
         ];
     }
@@ -123,27 +119,84 @@ class GeneratorTest extends TestCase
         $this->assertEquals($expected, $gen->format($pin));
     }
 
-    public function getPinProvider(): array
+    public function generatePinProvider(): array
     {
         return [
-            '2 digits' => [2],
-            '3 digits' => [3],
-            '4 digits' => [4],
-            '5 digits' => [5],
-            '6 digits' => [6],
-            '7 digits' => [7],
-            '8 digits' => [8],
+            '2 digits' => [
+                2,
+                false,
+            ],
+            '2 digits fail' => [
+                2,
+                true,
+            ],
+            '3 digits' => [
+                3,
+                false,
+            ],
+            '4 digits' => [
+                4,
+                false,
+            ],
+            '5 digits' => [
+                5,
+                false,
+            ],
+            '6 digits' => [
+                6,
+                false,
+            ],
+            '6 digits fail' => [
+                6,
+                true,
+            ],
+            '7 digits' => [
+                7,
+                false,
+            ],
+            '8 digits' => [
+                8,
+                false,
+            ],
         ];
     }
 
     /**
-     * @dataProvider getPinProvider
+     * @dataProvider generatePinProvider
      */
-    public function testGetPin($numDigits)
+    public function testGeneratePin($numDigits, $expectFail)
     {
         config(['pingenerator.digits' => $numDigits]);
 
-        $gen = new Generator();
-        $this->assertEquals($numDigits, strlen($gen->getPin()));
+        $gen = Mockery::mock(Generator::class . '[randomNum,checkObvious]');
+
+        $this->instance(
+            Generator::class,
+            $gen
+        );
+
+        if ($expectFail) {
+            $gen->shouldReceive('randomNum')
+                    ->atLeast()
+                    ->times(100)
+                    ->andReturn(0000);
+
+            $gen->shouldReceive('checkObvious')
+                    ->atLeast()
+                    ->times(100)
+                    ->passthru();
+
+            $this->expectException(Exception::class);
+            $gen->generatePin();
+
+            return;
+        } else {
+            $gen->shouldReceive('randomNum')
+                    ->passthru();
+            $gen->shouldReceive('checkObvious')
+                    ->passthru();
+        }
+
+        $this->assertEquals($numDigits, strlen($gen->generatePin()));
     }
 }

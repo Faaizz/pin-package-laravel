@@ -32,8 +32,14 @@ class Generator
         return in_array($pin, $this->obviousNumbers);
     }
 
-    // Generate pin
-    public function generate(): int
+    // Format pin into the appropriate number of digits by padding with zeros when necessary
+    public function format(int $pin): string
+    {
+        return sprintf($this->fmtStr, $pin);
+    }
+
+    // Generate PIN
+    public function generatePin(): string
     {
         $pin = $this->randomNum();
 
@@ -42,23 +48,11 @@ class Generator
             $pin = $this->randomNum();
             $safeguardCtr++;
 
-            if ($safeguardCtr > 100) {
+            if ($safeguardCtr >= 100) {
                 throw new Exception('unexpected error. 100 obvious numbers generated in sequence.');
             }
         }
 
-        return $pin;
-    }
-
-    // Format pin into the appropriate number of digits by padding with zeros when necessary
-    public function format(int $pin): string
-    {
-        return sprintf($this->fmtStr, $pin);
-    }
-
-    // Generate PIN
-    public function getPin(): string
-    {
-        return $this->format($this->generate());
+        return $this->format($pin);
     }
 }
