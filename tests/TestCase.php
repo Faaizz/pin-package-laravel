@@ -3,8 +3,9 @@
 namespace Faaizz\PinGenerator\Tests;
 
 use Faaizz\PinGenerator\PinGeneratorServiceProvider;
+use Orchestra\Testbench\TestCase as TestbenchTestCase;
 
-class TestcCase extends \Orchestra\Testbench\TestCase
+class TestCase extends TestbenchTestCase
 {
     protected function getPackageProviders($app)
     {
