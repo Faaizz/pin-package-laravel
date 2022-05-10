@@ -92,5 +92,38 @@ use Faaizz\PinGenerator\Facades\Generator;
 $pin = Generator::generatePin();
 ```
 
+## Analylsis
+
+
+### Correlation
+10 sets of 10 sample PINs were generated with this package. The correlation matrix is shown below:
+```
+1.00000000 -0.36660597  0.02838892  0.326951   -0.31296135  0.15329634  0.82164111 -0.26785433 -0.17259579  0.38242868
+-0.36660597  1.00000000 0.13227592  0.56484802  0.51892468  0.36206384 0.00540903  0.16315337  0.35804456 -0.64016749
+0.02838892  0.13227592  1.00000000  0.09757588  0.31496136  0.10173336  0.22556566  0.1746601  -0.459657    0.16611056
+0.326951    0.56484802  0.09757588  1.00000000  0.29092661  0.21004801  0.34511502  0.11264644  0.19172546 -0.22230083
+-0.31296135  0.51892468  0.31496136  0.29092661  1.00000000 -0.34069928 0.09757711 -0.25339393  0.04622051 -0.39997302
+0.15329634  0.36206384  0.10173336  0.21004801 -0.34069928  1.0000000  0.22446667  0.58208948 -0.11406063  0.12091266
+0.82164111  0.00540903  0.22556566  0.34511502  0.09757711  0.22446667  1.00000000 -0.43157752 -0.02318255  0.12361152
+-0.26785433  0.16315337  0.1746601   0.11264644 -0.25339393  0.58208948 -0.43157752  1.00000000 -0.5142036   0.41817848
+-0.17259579  0.35804456 -0.459657    0.19172546  0.04622051 -0.11406063 -0.02318255 -0.5142036   1.00000000 -0.73567793
+0.38242868 -0.64016749  0.16611056 -0.22230083 -0.39997302  0.12091266  0.12361152  0.41817848 -0.73567793  1.
+```
+*Note*: This analysis can be re-run by executing `./analysis/correlationAnalysis.sh`.
+
+### Repetitions
+1000 sample PINs were generated using this package, and the number of successive trials to generate the same PIN is collected in a distribution.
+The distribution is shown in the image below:
+![repetitions-img](./analysis/repetitions.png)
+
+The statistical properties are shown below:
+- **Minimum number of successive trials to get repetition:**  7
+- **Number of successive trials to get repetition that are < 100:**  8
+- **Average number of successive trials to get repetition:**  9571.829
+- **Maximum number of successive trials to get repetition:**  76884
+
+These figures further buttresses the point that computational resources need not be invested in checks to avoid repetitions.
+*Note*: This analysis can be re-run by executing `./analysis/repetitionAnalysis.sh`.
+
 ## References
 - [Cryptographically-secure pseudorandom number generator - Wikipedia](https://en.wikipedia.org/wiki/Cryptographically-secure_pseudorandom_number_generator)
