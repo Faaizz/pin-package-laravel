@@ -50,6 +50,16 @@ The service provider can also be manually registered in the Laravel project's `a
 The `Generator` facade can be used from the `Faaizz\PinGenerator\Facades` namespace after the `PinGeneratorServiceProvider` has been registered with a Laravel project.
 
 
+## Usage
+
+Easily generate PINs by calling the `generatePin()` method on the `Generator` facade:
+```php
+use Faaizz\PinGenerator\Facades\Generator;
+...
+$pin = Generator::generatePin();
+```
+
+
 ## Configuration
 
 ### Publish
@@ -83,13 +93,11 @@ return [
 ];
 ```
 
-## Usage
-
-Easily generate PINs by calling the `generatePin()` method on the `Generator` facade:
-```php
-use Faaizz\PinGenerator\Facades\Generator;
-...
-$pin = Generator::generatePin();
+## Testing
+Run tests by executing:
+```bash
+# Note: composer install must have been run to install dependencies
+./execTests.sh
 ```
 
 ## References
