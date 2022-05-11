@@ -12,7 +12,9 @@ Achieved Features:
 - Each PIN comprises four numeric digits (e.g. "2845"): this is fulfilled by ensuring that each generated PIN is formatted as a 4-digit string.
 - "Obvious" numbers should not be allowed (e.g. "1111", "1234"): this is satisfied by checking generated PINs against a pre-specified list of obvious numbers.
 - PINs should be generated in apparently random order: this is satisfied by the usage of PHP's `random_int()` function (which generates cryptographically secure pseudo-random integers).
-- A PIN should not be repeated until all preceding valid PINs have been emitted - even if the program is restarted between PINs: Naturally, the probability of randomly generating the same 4-digit number (for example) in succession is `1` out of `100,000,000`. Using a pseudorandom generator increases this probability, however, the chances of repeating a PIN are still very small. Thus, no computation power needs to be wasted in fulfilling this feature.
+- A PIN should not be repeated until all preceding valid PINs have been emitted - This is ensured by making use of Laravel caching. A `count` of valid PINs that have been generated (and also each valid PIN) are stored in the cache indefinitely. 
+Whenever a new PIN is to be generated, the `count` is compared with the total number of valid PINs (`$validPins = $possiblePins - $numberOfObviousPins`), if less than or equal (meaning we have run out of valid PINs), then the cache is cleared.
+Otherwise, the cache is checked for the newly generated PIN, if it already exists on the cache, a new PIN is generated.
 
 ## Installation
 
