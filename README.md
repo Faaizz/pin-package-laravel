@@ -12,9 +12,9 @@ Achieved Features:
 - Each PIN comprises four numeric digits (e.g. "2845"): this is fulfilled by ensuring that each generated PIN is formatted as a 4-digit string.
 - "Obvious" numbers should not be allowed (e.g. "1111", "1234"): this is satisfied by checking generated PINs against a pre-specified list of obvious numbers.
 - PINs should be generated in apparently random order: this is satisfied by the usage of PHP's `random_int()` function (which generates cryptographically secure pseudo-random integers).
-- A PIN should not be repeated until all preceding valid PINs have been emitted - This is ensured by making use of Laravel caching. A `count` of valid PINs that have been generated (and also each valid PIN) are stored in the cache indefinitely. 
-Whenever a new PIN is to be generated, the `count` is compared with the total number of valid PINs (`$validPins = $possiblePins - $numberOfObviousPins`), if less than or equal (meaning we have run out of valid PINs), then the cache is cleared.
-Otherwise, the cache is checked for the newly generated PIN, if it already exists on the cache, a new PIN is generated.
+- A PIN should not be repeated until all preceding valid PINs have been emitted - This is ensured by making use of a Database. 
+Whenever a new PIN is to be generated, the database is checked to see if all valid PINs have been generated. If yes, the database is reset.
+Otherwise, the database is checked for the newly generated PIN, if it already exists, the database is checked for preceding valid PINs. If all preceding valid PINs have been emitted, emit the generated PIN. Otherwise, a new PIN is generated and the check is performed over again.
 
 ## Installation
 
@@ -46,6 +46,12 @@ The service provider can also be manually registered in the Laravel project's `a
     Faaizz\PinGenerator\PinGeneratorServiceProvider::class
 ],
 ...
+```
+
+### Migration
+The database migrations can be run by executing database migration in the Laravel project:
+```bash
+php artisan migrate
 ```
 
 ### Facade

@@ -3,6 +3,7 @@
 namespace Faaizz\PinGenerator;
 
 use Exception;
+use Faaizz\PinGenerator\Models\Pin;
 use Illuminate\Support\Facades\Cache;
 
 class Generator
@@ -16,11 +17,8 @@ class Generator
     {
         $this->numDigits = config('pingenerator.digits', 4);
         $this->obviousNumbers = config('pingenerator.obvious_numbers', []);
-        $this->cacheTag = config('pingenerator.cache_tag', 'pingenerator_pins');
+        sort($this->obviousNumbers);
         $this->fmtStr = '%0' . $this->numDigits . 'd';
-
-        // Initialize PIN count in cache
-        Cache::tags($this->cacheTag)->put('count', 0);
     }
 
     // Get random number
@@ -44,25 +42,10 @@ class Generator
         return sprintf($this->fmtStr, $pin);
     }
 
-    // Check if PIN is already in cache
-    protected function checkInCache(int $pin): bool
+    // Clear PINs from DB if all possible PINs have been exhausted
+    protected function clearPins(): void
     {
-        $key = $this->cacheTag . $pin;
-        return Cache::tags($this->cacheTag)->has($key);
-    }
-
-    // Put PIN in cache and increment count
-    protected function putInCacheAndIncrementCount(int $pin): void
-    {
-        $key = $this->cacheTag . $pin;
-        Cache::tags($this->cacheTag)->put($key, $pin);
-        Cache::tags($this->cacheTag)->increment('count');
-    }
-
-    // Clear PINs from cache if all possible PINs have been exhausted
-    protected function clearCache(): void
-    {
-        Cache::tags($this->cacheTag)->flush();
+        Pin::truncate();
     }
 
     // Check if all possible PINs have been exhausted
@@ -71,24 +54,54 @@ class Generator
         $possiblePins = 10 ** $this->numDigits;
         $validPins = $possiblePins - count($this->obviousNumbers);
 
-        $count = Cache::tags($this->cacheTag)->get('count');
+        $count = Pin::all()->count();
 
         return $count >= $validPins;
+    }
+
+    // Check if PIN has already been generated
+    protected function checkExists(int $pinNum): bool
+    {
+        return Pin::where('pin', $pinNum)->count() > 0;
+    }
+
+    // Count obvious preceding PINs
+    protected function countObviousPrecedingPins(int $pinNum): int
+    {
+        $obviousPrecedingPinsArr = array_filter($this->obviousNumbers, function ($num) use ($pinNum) {
+            return $num < $pinNum;
+        });
+
+        return count($obviousPrecedingPinsArr);
+    }
+
+    // Check if all preceding valid PINs have been emitted
+    protected function checkAllPrecedingPinsEmitted(int $pinNum): bool
+    {
+        $obviousPrecedingPins = $this->countObviousPrecedingPins($pinNum);
+        $validPrecedingPins = $pinNum - $obviousPrecedingPins;
+
+        $emittedPrecedingPins = Pin::where('pin', '<', $pinNum)->count();
+
+        return $validPrecedingPins === $emittedPrecedingPins;
     }
 
     // Generate PIN
     public function generatePin(): string
     {
         if ($this->checkExhausted()) {
-            $this->clearCache();
+            $this->clearPins();
         }
 
-        $pin = $this->randomNum();
+        $pinNum = $this->randomNum();
 
-        $isObvious = $this->checkObvious($pin);
+        $isObvious = $this->checkObvious($pinNum);
         $obviousSafeguardCtr = 0;
-        while ($isObvious || $this->checkInCache($pin)) {
-            $pin = $this->randomNum();
+        $exists = $this->checkExists($pinNum);
+        $allPrecedingEmitted = $this->checkAllPrecedingPinsEmitted($pinNum);
+
+        while ($isObvious || ($exists && !$allPrecedingEmitted)) {
+            $pinNum = $this->randomNum();
 
             if ($isObvious) {
                 $obviousSafeguardCtr++;
@@ -98,11 +111,18 @@ class Generator
                 throw new Exception('unexpected error. 100 obvious numbers generated in sequence.');
             }
 
-            $isObvious = $this->checkObvious($pin);
+            $isObvious = $this->checkObvious($pinNum);
+
+            $exists = $this->checkExists($pinNum);
+            $allPrecedingEmitted = $this->checkAllPrecedingPinsEmitted($pinNum);
         }
 
-        $this->putInCacheAndIncrementCount($pin);
+        if (!$exists) {
+            $pin = new Pin();
+            $pin->pin = $pinNum;
+            $pin->save();
+        }
 
-        return $this->format($pin);
+        return $this->format($pinNum);
     }
 }

@@ -4,9 +4,11 @@ namespace Faaizz\PinGenerator\Tests\Unit;
 
 use Exception;
 use Faaizz\PinGenerator\Generator;
+use Faaizz\PinGenerator\Models\Pin;
 use Faaizz\PinGenerator\Tests\TestCase;
 use Faaizz\PinGenerator\Tests\Traits\AccessInaccessibleMethodsTrait;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Mockery;
 
 class GeneratorTest extends TestCase
@@ -208,63 +210,24 @@ class GeneratorTest extends TestCase
         $this->assertEquals($numDigits, strlen($gen->generatePin()));
     }
 
-    public function testCheckInCache()
+    public function testClearPins()
     {
         $cacheTag = 'pingenerator_pins';
-        config(['pingenerator.cache_tag' => $cacheTag]);
+        config(['pingenerator.obvious_numbers' => []]);
         $gen = new Generator();
 
-        $pin = random_int(0, 9999);
-        $res = $this->invokeInaccessibleMethod($gen, 'checkInCache', [$pin]);
-        $this->assertFalse($res);
+        $this->assertEquals(0, Pin::count());
 
-
-        $key = $cacheTag . $pin;
-        Cache::tags($cacheTag)->put($key, $pin);
-
-        $res = $this->invokeInaccessibleMethod($gen, 'checkInCache', [$pin]);
-        $this->assertTrue($res);
-    }
-
-    public function testPutInCacheAndIncrementCount()
-    {
-        $cacheTag = 'pingenerator_pins';
-        config(['pingenerator.cache_tag' => $cacheTag]);
-        $gen = new Generator();
-
-        $pin = random_int(0, 9999);
-
-        $this->assertTrue(Cache::tags($cacheTag)->has('count'));
-        $this->assertEquals(0, Cache::tags($cacheTag)->get('count'));
-
-        $this->invokeInaccessibleMethod($gen, 'putInCacheAndIncrementCount', [$pin]);
-
-        $key = $cacheTag . $pin;
-        $this->assertTrue(Cache::tags($cacheTag)->has($key));
-        $this->assertEquals(1, Cache::tags($cacheTag)->get('count'));
-    }
-
-    public function testClearCache()
-    {
-        $cacheTag = 'pingenerator_pins';
-        config(['pingenerator.cache_tag' => $cacheTag]);
-        $gen = new Generator();
-
-        $this->assertTrue(Cache::tags($cacheTag)->has('count'));
-        $this->assertEquals(0, Cache::tags($cacheTag)->get('count'));
-
-        Cache::tags($cacheTag)->increment('count');
-        $this->assertEquals(1, Cache::tags($cacheTag)->get('count'));
+        Pin::create(['pin' => 9876]);
+        $this->assertEquals(1, Pin::count());
 
         $pinStr = $gen->generatePin();
         $pin = intval($pinStr);
 
-        $key = $cacheTag . $pin;
-        $this->assertTrue(Cache::tags($cacheTag)->has($key));
+        $this->assertTrue(Pin::where('pin', $pin)->count() > 0);
 
-        $this->invokeInaccessibleMethod($gen, 'clearCache', []);
-        $this->assertEquals(0, Cache::tags($cacheTag)->get('count'));
-        $this->assertFalse(Cache::tags($cacheTag)->has($key));
+        $this->invokeInaccessibleMethod($gen, 'clearPins', []);
+        $this->assertEquals(0, Pin::count());
     }
 
     public function checkExhaustedProvider(): array
@@ -290,21 +253,101 @@ class GeneratorTest extends TestCase
     {
         config(['pingenerator.digits' => $numDigits]);
         config(['pingenerator.obvious_numbers' => $obviousNumbers]);
-        $cacheTag = 'pingenerator_pins';
-        config(['pingenerator.cache_tag' => $cacheTag]);
         $gen = new Generator();
 
         $res = $this->invokeInaccessibleMethod($gen, 'checkExhausted', []);
         $this->assertFalse($res);
 
         $validPins = (10 ** $numDigits) - count($obviousNumbers);
-        for ($idx = 0; $idx < $validPins; $idx++) {
-            $gen->generatePin();
-        }
 
-        $this->assertEquals($validPins, Cache::tags($cacheTag)->get('count'));
+        DB::beginTransaction();
+        for ($idx = 0; $idx < $validPins; $idx++) {
+            Pin::create(['pin' => $idx]);
+        }
+        DB::commit();
+
+        $this->assertEquals($validPins, Pin::count());
 
         $res = $this->invokeInaccessibleMethod($gen, 'checkExhausted', []);
+        $this->assertTrue($res);
+    }
+
+    public function testCheckExists()
+    {
+        $gen = new Generator();
+
+        $pinNum = 1234;
+
+        $res = $this->invokeInaccessibleMethod($gen, 'checkExists', [$pinNum]);
+        $this->assertFalse($res);
+
+        $pin = new Pin();
+        $pin->pin = $pinNum;
+        $pin->save();
+
+        $res = $this->invokeInaccessibleMethod($gen, 'checkExists', [$pinNum]);
+        $this->assertTrue($res);
+    }
+
+    public function countObviousPrecedingPinsProvider(): array
+    {
+        return [
+            '3 preceding obvious numbers' => [
+                1,
+                [2, 3, 4, 5, 6, 7],
+                5,
+                3,
+            ],
+            '0 preceding obvious number' => [
+                4,
+                [879, 2398, 6590],
+                90,
+                0,
+            ],
+            '1 preceding obvious number' => [
+                4,
+                [879, 2398, 6590],
+                1090,
+                1,
+            ],
+            '11 preceding obvious number' => [
+                4,
+                [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 879, 2398, 6590],
+                1190,
+                11,
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider countObviousPrecedingPinsProvider
+     */
+    public function testCountObviousPrecedingPins($numDigits, $obviousNumbers, $pin, $precedingObviousNumbers)
+    {
+        config(['pingenerator.digits' => $numDigits]);
+        config(['pingenerator.obvious_numbers' => $obviousNumbers]);
+        $gen = new Generator();
+
+        $res = $this->invokeInaccessibleMethod($gen, 'countObviousPrecedingPins', [$pin]);
+
+        $this->assertEquals($precedingObviousNumbers, $res);
+    }
+
+    public function testCheckAllPrecedingPinsEmitted()
+    {
+        $pin = 1534;
+
+        config(['pingenerator.obvious_numbers' => []]);
+        $gen = new Generator();
+
+        $res = $this->invokeInaccessibleMethod($gen, 'checkAllPrecedingPinsEmitted', [$pin]);
+        $this->assertFalse($res);
+
+        for ($idx = 0; $idx < $pin; $idx++) {
+            Pin::create(['pin' => $idx]);
+        }
+
+        $res = $this->invokeInaccessibleMethod($gen, 'checkAllPrecedingPinsEmitted', [$pin]);
         $this->assertTrue($res);
     }
 }
