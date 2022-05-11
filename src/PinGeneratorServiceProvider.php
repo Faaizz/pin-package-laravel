@@ -20,5 +20,7 @@ class PinGeneratorServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__ . '/../config/config.php' => config_path('pingenerator.php'),
         ], 'config');
+
+        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
     }
 }
