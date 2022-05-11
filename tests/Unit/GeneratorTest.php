@@ -6,6 +6,7 @@ use Exception;
 use Faaizz\PinGenerator\Generator;
 use Faaizz\PinGenerator\Tests\TestCase;
 use Faaizz\PinGenerator\Tests\Traits\AccessInaccessibleMethodsTrait;
+use Illuminate\Support\Facades\Cache;
 use Mockery;
 
 class GeneratorTest extends TestCase
@@ -205,5 +206,105 @@ class GeneratorTest extends TestCase
         }
 
         $this->assertEquals($numDigits, strlen($gen->generatePin()));
+    }
+
+    public function testCheckInCache()
+    {
+        $cacheTag = 'pingenerator_pins';
+        config(['pingenerator.cache_tag' => $cacheTag]);
+        $gen = new Generator();
+
+        $pin = random_int(0, 9999);
+        $res = $this->invokeInaccessibleMethod($gen, 'checkInCache', [$pin]);
+        $this->assertFalse($res);
+
+
+        $key = $cacheTag . $pin;
+        Cache::tags($cacheTag)->put($key, $pin);
+
+        $res = $this->invokeInaccessibleMethod($gen, 'checkInCache', [$pin]);
+        $this->assertTrue($res);
+    }
+
+    public function testPutInCacheAndIncrementCount()
+    {
+        $cacheTag = 'pingenerator_pins';
+        config(['pingenerator.cache_tag' => $cacheTag]);
+        $gen = new Generator();
+
+        $pin = random_int(0, 9999);
+
+        $this->assertTrue(Cache::tags($cacheTag)->has('count'));
+        $this->assertEquals(0, Cache::tags($cacheTag)->get('count'));
+
+        $this->invokeInaccessibleMethod($gen, 'putInCacheAndIncrementCount', [$pin]);
+
+        $key = $cacheTag . $pin;
+        $this->assertTrue(Cache::tags($cacheTag)->has($key));
+        $this->assertEquals(1, Cache::tags($cacheTag)->get('count'));
+    }
+
+    public function testClearCache()
+    {
+        $cacheTag = 'pingenerator_pins';
+        config(['pingenerator.cache_tag' => $cacheTag]);
+        $gen = new Generator();
+
+        $this->assertTrue(Cache::tags($cacheTag)->has('count'));
+        $this->assertEquals(0, Cache::tags($cacheTag)->get('count'));
+
+        Cache::tags($cacheTag)->increment('count');
+        $this->assertEquals(1, Cache::tags($cacheTag)->get('count'));
+
+        $pinStr = $gen->generatePin();
+        $pin = intval($pinStr);
+
+        $key = $cacheTag . $pin;
+        $this->assertTrue(Cache::tags($cacheTag)->has($key));
+
+        $this->invokeInaccessibleMethod($gen, 'clearCache', []);
+        $this->assertEquals(0, Cache::tags($cacheTag)->get('count'));
+        $this->assertFalse(Cache::tags($cacheTag)->has($key));
+    }
+
+    public function checkExhaustedProvider(): array
+    {
+        return [
+            '1 digit, 3 obvious numbers, 7 valid PINs' => [
+                1,
+                [2, 3, 4],
+                7,
+            ],
+            '4 digits, 10 obvious numbers, 9990 valid PINs' => [
+                4,
+                [0000, 1111, 2222, 3333, 4444, 5555, 6666, 7777, 8888, 9999],
+                9990,
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider checkExhaustedProvider
+     */
+    public function testCheckExhausted($numDigits, $obviousNumbers, $validPins)
+    {
+        config(['pingenerator.digits' => $numDigits]);
+        config(['pingenerator.obvious_numbers' => $obviousNumbers]);
+        $cacheTag = 'pingenerator_pins';
+        config(['pingenerator.cache_tag' => $cacheTag]);
+        $gen = new Generator();
+
+        $res = $this->invokeInaccessibleMethod($gen, 'checkExhausted', []);
+        $this->assertFalse($res);
+
+        $validPins = (10 ** $numDigits) - count($obviousNumbers);
+        for ($idx = 0; $idx < $validPins; $idx++) {
+            $gen->generatePin();
+        }
+
+        $this->assertEquals($validPins, Cache::tags($cacheTag)->get('count'));
+
+        $res = $this->invokeInaccessibleMethod($gen, 'checkExhausted', []);
+        $this->assertTrue($res);
     }
 }
